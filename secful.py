@@ -2,28 +2,23 @@ from websocket import create_connection
 import re
 import socket
 import json
+import time
 import threading
 import Queue
 
-def ignore_exception(f):
-    def func(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except:
-            pass
-    return func
-
 class Secful:
     
-    MAX_QUEUE_SIZE = 20
-    NUM_OF_THREADS = 3
+    MAX_QUEUE_SIZE = 50
+    NUM_OF_THREADS = 5
     WS_SERVER_HOST = 'ws://localhost:7000'
 
     def __init__(self):
-        print 'HELLO'
-        self.queue = Queue.Queue(maxsize=self.MAX_QUEUE_SIZE)
-        self.threads_to_sockets = {}
-        self.start_threads()
+        try:
+            self.queue = Queue.Queue(maxsize=self.MAX_QUEUE_SIZE)
+            self.threads_to_sockets = {}
+            self.start_threads()
+        except:
+            pass
 
     def start_threads(self):
         for i in range(self.NUM_OF_THREADS):
@@ -47,7 +42,6 @@ class Secful:
             except:
                 pass
 
-    #@ignore_exception
     def connect_to_ws(self, thread):
         try:
             ws = self.threads_to_sockets.get(thread, None)
@@ -57,13 +51,13 @@ class Secful:
         except:
             self.threads_to_sockets[thread] = None
 
-    #@ignore_exception
     def do_work(self, request):
         request_dict = Secful.get_request_dict(request)
         ws = self.threads_to_sockets[threading.current_thread()]
         try:
             ws.send(json.dumps(request_dict, ensure_ascii=False))
         except:
+            time.sleep(60)
             self.connect_to_ws(threading.current_thread())
 
 
