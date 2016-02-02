@@ -1,4 +1,6 @@
 from websocket import create_connection
+from django.conf import settings
+import uuid
 import re
 import socket
 import json
@@ -10,18 +12,21 @@ class Secful:
     
     MAX_QUEUE_SIZE = 50
     NUM_OF_THREADS = 5
+    SOCKET_TIMEOUT = 1
     WS_SERVER_HOST = 'ws://localhost:7000'
 
     def __init__(self):
         try:
             self.queue = Queue.Queue(maxsize=self.MAX_QUEUE_SIZE)
             self.threads_to_sockets = {}
+            self.token = getattr(settings, "SECFUL_COMPANY_ID", None)
+            self.agentIdentifier = uuid.uuid4().hex
             self.start_threads()
         except:
             pass
 
     def start_threads(self):
-        for i in range(self.NUM_OF_THREADS):
+        for _ in range(self.NUM_OF_THREADS):
             thread = threading.Thread(target=self.worker)
             self.connect_to_ws(thread)
             thread.start()
@@ -47,12 +52,13 @@ class Secful:
             ws = self.threads_to_sockets.get(thread, None)
             if ws:
                 ws.close()
-            self.threads_to_sockets[thread] = create_connection(self.WS_SERVER_HOST)
+            token_header = ['Authorization: Bearer {}'.format(self.token)]
+            self.threads_to_sockets[thread] = create_connection(self.WS_SERVER_HOST, timeout=self.SOCKET_TIMEOUT, header=token_header)
         except:
             self.threads_to_sockets[thread] = None
 
     def do_work(self, request):
-        request_dict = Secful.get_request_dict(request)
+        request_dict = Secful.get_request_dict(request, self.agentIdentifier)
         ws = self.threads_to_sockets[threading.current_thread()]
         try:
             ws.send(json.dumps(request_dict, ensure_ascii=False))
@@ -62,8 +68,7 @@ class Secful:
 
 
     @staticmethod
-    def get_request_dict(request):
-        #import pudb; pudb.set_trace()
+    def get_request_dict(request, uuid):
         headers = [{'key': k, 'value': v} for k,v in request.META.iteritems() 
                     if re.match('HTTP_.+|CONTENT_.+', k)]
         metadata = [{'key': 'user-id', 'value': request.user.id}]
@@ -76,7 +81,7 @@ class Secful:
 
         request_dict = {'agentType': 'Python',
                         'agentVersion': '1.0',
-                        'agentIdentifier': '12345',
+                        'agentIdentifier': uuid,
                         'userSrcIp': request.META['REMOTE_ADDR'],
         	        'companyDstIp': socket.gethostbyname_ex(socket.gethostname())[2],
                         'metada': metadata,
