@@ -69,8 +69,11 @@ class Secful:
 
     @staticmethod
     def get_request_dict(request, uuid):
-        headers = [{'key': k, 'value': v} for k,v in request.META.iteritems() 
-                    if re.match('HTTP_.+|CONTENT_.+', k)]
+        headers = [{'key': k[5:].replace('_', '-'), 'value': v} for k,v in request.META.iteritems() 
+                    if re.match('HTTP_.+', k)]
+        headers.extend([{'key': 'CONTENT-TYPE', 'value': request.META['CONTENT_TYPE']},
+                        {'key': 'CONTENT-LENGTH', 'value': request.META['CONTENT_LENGTH']}])
+
         metadata = [{'key': 'user-id', 'value': request.user.id}]
 
         http_dict = {'path': request.get_full_path(),
