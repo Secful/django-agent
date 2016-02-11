@@ -1,33 +1,27 @@
 # django-agent
-Catch traffic on django middleware and send it out in different threads.
+Secure Django server with SECful
 
 Installation
 ------------
 
 ```
-Install python websocket-client
-"pip install websocket-client"
+pip install git+https://github.com/SECful/django-agent.git@v1.0
 ```
+In django settings.py:
+* add the item 'secfuldjangoplugin.Secful' to MIDDLEWARE_CLASSES list.
+* add "SECFUL_KEY = 'KEY'" to the settings (replace KEY with the key provided by SECful.)
+* add "SECFUL_HOST = 'HOST'" to the settings (replace HOST with the host provided by SECful.)
 
+For example (settings.py):
 ```
-Put secful.py in the correct folder
-```
-
-```
-To activate secful middleware component, add it to the MIDDLEWARE_CLASSES list in your Django settings.
-For example:
+SECFUL_KEY = 'KEY' # replace KEY with the key provided by SECful.
+SECFUL_HOST = 'HOST' # replace HOST with the host provided by SECful.
+...
 MIDDLEWARE_CLASSES = [
-
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'djangoplugin.secful.Secful',
+    ..., 
+    ..., 
+    ..., 
+    'secfuldjangoplugin.Secful',
 ]
 
-add SECFUL_COMPANY_ID = 'TOKEN' also to the settings.
 ```
