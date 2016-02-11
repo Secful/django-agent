@@ -69,16 +69,20 @@ class Secful:
 
     @staticmethod
     def get_request_dict(request, uuid):
-        headers = [{'key': k[5:].replace('_', '-'), 'value': v} for k,v in request.META.iteritems() 
-                    if re.match('HTTP_.+', k)]
-        headers.extend([{'key': 'CONTENT-TYPE', 'value': request.META['CONTENT_TYPE']},
-                        {'key': 'CONTENT-LENGTH', 'value': request.META['CONTENT_LENGTH']}])
+        headers = []
+        for k, v in request.META.iteritems():
+            if k.startswith('HTTP_'):
+                Secful.add_key_value_to_list(k[5:].replace('_', '-'), v, headers)
 
-        metadata = [{'key': 'user-id', 'value': request.user.id}]
+        Secful.add_key_value_to_list('CONTENT-TYPE', request.META.get('CONTENT_TYPE'), headers)
+        Secful.add_key_value_to_list('CONTENT-LENGTH', request.META.get('CONTENT_LENGTH'), headers)
 
-        http_dict = {'path': request.get_full_path(),
-                     'version': request.META['SERVER_PROTOCOL'],
-                     'method': request.method,
+        metadata = []
+        Secful.add_key_value_to_list('user-id', request.user.id, metadata)
+
+        http_dict = {'path': request.get_full_path() or '',
+                     'version': request.META['SERVER_PROTOCOL'] or '',
+                     'method': request.method or '',
                      'headers': headers,
                      'payload': request.body}
 
@@ -86,9 +90,14 @@ class Secful:
                         'agentVersion': '1.0',
                         'agentIdentifier': uuid,
                         'userSrcIp': request.META['REMOTE_ADDR'],
-        	        'companyDstIp': socket.gethostbyname_ex(socket.gethostname())[2],
-                        'metada': metadata,
+                        'companyLocalIps': socket.gethostbyname_ex(socket.gethostname())[2],
+                        'metadata': metadata,
                         'http': http_dict}
         return request_dict
+
+    @staticmethod
+    def add_key_value_to_list(key, value, req_list):
+        if value is not None:
+            req_list.append({'key': key, 'value': value})
 
 
